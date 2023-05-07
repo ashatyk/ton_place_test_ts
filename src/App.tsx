@@ -151,7 +151,7 @@ const mockDataEndpoint = `https://qbzvhxqakg.api.quickmocker.com/ton-place-moc-a
 function App() {
 
   const [mockData,setMockData] = React.useState<AutocompleteOption[]>()
-
+  // Too Many Requests: You have reached your daily request limit (100 requests).   :(
   React.useEffect(() => {
     fetch(mockDataEndpoint)
       .then((response) => response.json())
@@ -163,19 +163,17 @@ function App() {
 
   const [secondValue, setSecondValue] = React.useState<AutocompleteOption[]>([])
 
-  const [thirdValue, setThirdValue] = React.useState<AutocompleteOption[]>([])
-
   return (
     <ThemeProvider theme={theme}>
         <DemoPage>
-          {<AutocompleteMultiple
+          <AutocompleteMultiple
             options={options}
             selectedOptions={firstValue}
             onChange={option => setFirstValue(option)}
             inputPlaceholder={'Select options'}
             popperPlaceholder={'Nothing found'}
             getTagLabel={(option) => option.renderFields['label'].title}
-          /> }
+          />
           {mockData && <AutocompleteMultiple
             options={mockData}
             selectedOptions={secondValue}
