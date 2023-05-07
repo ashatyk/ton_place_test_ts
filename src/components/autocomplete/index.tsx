@@ -128,7 +128,7 @@ export const AutocompleteMultiple: React.FunctionComponent<AutocompleteProps> = 
     autocompleteInputRef.current?.focus()
   }
 
-  const onAutocompleteToggleClick = (event: any) => {
+  const onAutocompleteToggleClick = (event: React.MouseEvent<HTMLElement>) => {
 
     event.stopPropagation()
 
@@ -155,7 +155,6 @@ export const AutocompleteMultiple: React.FunctionComponent<AutocompleteProps> = 
   }
 
   const onPopperOptionClick = (option: AutocompleteOption) => (event: React.MouseEvent<HTMLElement>) => {
-    event.stopPropagation()
     onOptionSelect(option)
     setAutocompleteInputValue('')
     setAutocompletePopperOpen(false)
