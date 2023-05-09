@@ -1,6 +1,6 @@
 import React from "react"
 import styled from "styled-components";
-import {Popper, PopperOptions, PopperOptionsSubhead, PopperOptionsPrimary} from "../../elements/popper";
+import {Popper, PopperOption, PopperOptionsSubhead, PopperOptionsPrimary} from "../../elements/popper";
 import { IconButton } from "../../elements/iconButton";
 import {Highlight} from "../../elements/highlight";
 import {ReactComponent as DeleteIcon} from '../../icons/delete.svg';
@@ -111,24 +111,44 @@ export const AutocompleteMultiple: React.FunctionComponent<AutocompleteProps> = 
      getTagLabel
 }) => {
 
+  const optionsWithRefs = options.map((option) => ({...option, ref: React.createRef<HTMLLIElement>()}))
+
   const [autocompletePopperOpen, setAutocompletePopperOpen] = React.useState(false)
 
-  const [autocompletePopperHoverIndex, setAutocompletePopperHoverIndex] = React.useState(0)
+  const [autocompletePopperHoverIndex, _setAutocompletePopperHoverIndex] = React.useState(0)
 
   const [autocompleteInputValue,setAutocompleteInputValue] = React.useState<string>('')
 
-  const [autocompleteRenderOptions,setAutocompleteRenderOptions] = React.useState(options)
+  const [autocompleteRenderOptions,setAutocompleteRenderOptions] = React.useState(optionsWithRefs)
 
   const autocompleteWrapperRef = React.useRef<HTMLDivElement>(null)
 
   const autocompleteInputRef = React.useRef<HTMLInputElement>(null)
 
+  const setAutocompletePopperScrollIndex = (index: number) => {
+    autocompleteRenderOptions?.[index]?.ref?.current?.scrollIntoView({
+      block: "nearest"
+    });
+  }
+
+  const setAutocompletePopperHoverIndex = (index: number) => {
+    setAutocompletePopperScrollIndex(index)
+    _setAutocompletePopperHoverIndex(index)
+  }
+
+  const resetAutocompletePopperHoverIndex = () => setAutocompletePopperHoverIndex(0)
+
   const onAutocompleteWrapperClick = () => {
     setAutocompletePopperOpen(true)
     autocompleteInputRef.current?.focus()
+    resetAutocompletePopperHoverIndex()
   }
 
-  const onAutocompleteToggleClick = (event: React.MouseEvent<HTMLElement>) => {
+  const onAutocompleteWrapperFocus = () => {
+    autocompleteInputRef.current?.focus()
+    resetAutocompletePopperHoverIndex()
+  }
+  const onAutocompleteToggleClick = (event: React.MouseEvent<HTMLDivElement>) => {
 
     event.stopPropagation()
 
@@ -143,34 +163,50 @@ export const AutocompleteMultiple: React.FunctionComponent<AutocompleteProps> = 
 
   }
 
-  const onOptionSelect = (option: AutocompleteOption) => onChange(
-    selectedOptions.includes(option)
-      ? selectedOptions.filter(selectedOption => selectedOption.value !== option.value)
-      : [...selectedOptions, option]
-  )
-
-  const onSelectedOptionClick = (option: AutocompleteOption) => (event: React.MouseEvent<HTMLElement>) => {
+  const onAutocompleteSelectedOptionClick = (option: AutocompleteOption) => (event: React.MouseEvent<HTMLDivElement>) => {
     event.stopPropagation()
-    onOptionSelect(option)
+
+    onChange(selectedOptions.filter(selectedOption => selectedOption.value !== option.value))
+
+    autocompleteInputRef.current?.focus()
+
+    setAutocompletePopperOpen(true)
+
+    resetAutocompletePopperHoverIndex()
+
   }
 
-  const onPopperOptionClick = (option: AutocompleteOption) => (event: React.MouseEvent<HTMLElement>) => {
-    onOptionSelect(option)
+  const onAutocompletePopperOptionClick = (option: AutocompleteOption) => (event: React.MouseEvent<HTMLLIElement>) => {
+    event.stopPropagation()
+
+    onChange([...selectedOptions, option])
+
     setAutocompleteInputValue('')
-    setAutocompletePopperOpen(false)
+
+    resetAutocompletePopperHoverIndex()
   }
 
   const onAutocompleteInputValueChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setAutocompleteInputValue(event.target.value)
   }
 
+  const onAutocompletePopperOptionMouseMove = (index: number) => () => {
+    setAutocompletePopperHoverIndex(index)
+  }
+
   //filter render options with input value && already selected options
   React.useEffect(() => {
 
-    setAutocompletePopperHoverIndex(0)
+    if(!autocompletePopperOpen && autocompleteInputValue){
+      setAutocompletePopperOpen(true)
+    }
+
+    if(autocompletePopperOpen){
+      resetAutocompletePopperHoverIndex()
+    }
 
     setAutocompleteRenderOptions(
-      options
+      optionsWithRefs
         .filter(option =>
           Object.values(option.renderFields)
             .reduce((acc: string[], value) =>  [...acc,value.title],[])
@@ -184,10 +220,12 @@ export const AutocompleteMultiple: React.FunctionComponent<AutocompleteProps> = 
 
   //handle autocomplete outside click event
   React.useEffect(() => {
-    const handler = (event: MouseEvent) =>
-      autocompleteWrapperRef.current
-      && !autocompleteWrapperRef.current.contains(event.target as Node)
-      && setAutocompletePopperOpen(false)
+    const handler = (event: MouseEvent) =>{
+      if(autocompleteWrapperRef.current && !autocompleteWrapperRef.current.contains(event.target as Node)){
+        setAutocompletePopperOpen(false)
+      }
+    }
+
 
     document.addEventListener("mousedown", handler);
 
@@ -201,48 +239,85 @@ export const AutocompleteMultiple: React.FunctionComponent<AutocompleteProps> = 
 
       switch (e.code) {
 
+        case "Tab":{
+          e.preventDefault()
+
+          if(!autocompletePopperOpen) {
+            setAutocompletePopperOpen(true);
+
+            autocompleteInputRef.current?.focus()
+
+            resetAutocompletePopperHoverIndex()
+          }
+
+          if(autocompletePopperOpen) {
+            setAutocompletePopperOpen(false);
+
+            autocompleteInputRef.current?.blur()
+          }
+
+          break
+        }
+        case "Escape":{
+
+          if(autocompletePopperOpen) {
+            setAutocompletePopperOpen(false);
+            autocompleteInputRef.current?.blur()
+          }
+
+          break
+        }
+
         case "Enter":{
 
           if(!autocompletePopperOpen) return
 
-          setAutocompletePopperHoverIndex(0)
-
           if(autocompleteRenderOptions?.[autocompletePopperHoverIndex]){
-            onOptionSelect(autocompleteRenderOptions[autocompletePopperHoverIndex])
-            setAutocompleteInputValue('')
-          }
 
+            onChange([...selectedOptions, autocompleteRenderOptions[autocompletePopperHoverIndex]])
+
+            setAutocompleteInputValue('')
+
+            resetAutocompletePopperHoverIndex()
+
+          }
 
           break
         }
 
         case "Backspace":{
 
-          setAutocompletePopperHoverIndex(0)
+          if(autocompleteInputValue.length === 0) {
+            onChange(selectedOptions.slice(0, -1))
 
-          if(autocompleteInputValue.length === 0) onChange(selectedOptions.slice(0, -1))
+            resetAutocompletePopperHoverIndex()
+          }
 
           break
         }
 
         case "ArrowUp":{
+
           e.preventDefault();
 
           const shiftedAutocompletePopperHoverIndex = autocompletePopperHoverIndex - 1
 
-          if (shiftedAutocompletePopperHoverIndex >= 0)
+          if (shiftedAutocompletePopperHoverIndex >= 0) {
             setAutocompletePopperHoverIndex(shiftedAutocompletePopperHoverIndex)
+          }
 
           break
         }
 
         case "ArrowDown": {
+
           e.preventDefault();
 
           const shiftedAutocompletePopperHoverIndex = autocompletePopperHoverIndex + 1
 
-          if (shiftedAutocompletePopperHoverIndex < autocompleteRenderOptions.length)
+          if (shiftedAutocompletePopperHoverIndex < autocompleteRenderOptions.length){
             setAutocompletePopperHoverIndex(shiftedAutocompletePopperHoverIndex)
+          }
 
           break
 
@@ -262,20 +337,19 @@ export const AutocompleteMultiple: React.FunctionComponent<AutocompleteProps> = 
     autocompleteRenderOptions
   ])
 
-
-
   return (
     <AutocompleteWrapper
       ref={autocompleteWrapperRef}
       tabIndex={0}
       onClick={onAutocompleteWrapperClick}
+      onFocus={onAutocompleteWrapperFocus}
       autocompletePopperOpen={autocompletePopperOpen}
     >
       <AutocompleteBase>
         {selectedOptions.map(selectedOption => (
           <AutocompleteBaseChip key={selectedOption.value}>
             {getTagLabel(selectedOption)}
-            <IconButton onClick={onSelectedOptionClick(selectedOption)}>
+            <IconButton onClick={onAutocompleteSelectedOptionClick(selectedOption)}>
               <DeleteIcon/>
             </IconButton>
           </AutocompleteBaseChip>
@@ -293,20 +367,21 @@ export const AutocompleteMultiple: React.FunctionComponent<AutocompleteProps> = 
       <Popper popperOpen={autocompletePopperOpen}>
 
         {!autocompleteRenderOptions.length &&
-          <PopperOptions isLastElement>
+          <PopperOption isLastElement>
             <PopperOptionsSubhead>
               {popperPlaceholder}
             </PopperOptionsSubhead>
-          </PopperOptions>
+          </PopperOption>
         }
 
         {autocompleteRenderOptions.map((option, index,{length}) => (
-          <PopperOptions
+          <PopperOption
             key={option.value}
-            onClick={onPopperOptionClick(option)}
-            onMouseEnter={() => setAutocompletePopperHoverIndex(index)}
+            onClick={onAutocompletePopperOptionClick(option)}
+            onMouseMove={onAutocompletePopperOptionMouseMove(index)}
             isOptionHighlighted={index === autocompletePopperHoverIndex}
             isLastElement={index === length - 1}
+            ref={option.ref}
           >
             {Object.values(option.renderFields).map((field) => {
 
@@ -318,11 +393,11 @@ export const AutocompleteMultiple: React.FunctionComponent<AutocompleteProps> = 
                   <Highlight match={autocompleteInputValue}>
                     {field.title}
                   </Highlight>
-              </RenderComponent>
+                </RenderComponent>
               )
 
             })}
-          </PopperOptions>
+          </PopperOption>
         ))}
 
       </Popper>

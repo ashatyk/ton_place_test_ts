@@ -39,7 +39,7 @@ export const Highlight: React.FunctionComponent<HighlightProps> = ({ children: t
   const startingText = text.slice (0, matches[0]?.index);
 
   return (
-    <div>
+    <>
       {startingText}
       {matches.map((match, index) => {
         const highlightSubstring = match[0];
@@ -51,6 +51,6 @@ export const Highlight: React.FunctionComponent<HighlightProps> = ({ children: t
           </div>
         );
       })}
-    </div>
+    </>
   )
 }

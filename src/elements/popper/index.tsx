@@ -10,7 +10,7 @@ export const Popper = styled(`ul`)<PopperProps>`
   padding: 0;
   display: none;
   list-style: none;
-  max-height: 250px;
+  max-height: 242px;
   border-radius: 0 0 ${({theme}) => theme.size.size_border_radius__regular} ${({theme}) => theme.size.size_border_radius__regular};
   overflow-y: auto;
   border: 1px solid ${({theme}) => theme.palette.color_field_border_alpha};
@@ -38,7 +38,7 @@ export interface PopperOptionProps {
   isLastElement?: boolean
 }
 
-export const PopperOptions = styled(`li`)<PopperOptionProps>`
+export const PopperOption = styled(`li`)<PopperOptionProps>`
   padding: 6px 0 8px 9px;
   display: flex;
   cursor: pointer;
